@@ -4,31 +4,59 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 90 20% 97%;
+    --foreground: 100 15% 20%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 100 15% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 100 15% 20%;
+    --primary: 96 22% 42%;
+    --primary-foreground: 90 30% 98%;
+    --secondary: 90 20% 92%;
+    --secondary-foreground: 100 15% 20%;
+    --muted: 90 20% 92%;
+    --muted-foreground: 100 10% 40%;
+    --accent: 96 22% 88%;
+    --accent-foreground: 100 15% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 90 30% 98%;
+    --border: 90 15% 85%;
+    --input: 90 15% 85%;
+    --ring: 96 22% 42%;
+    --radius: 0.75rem;
   }
+
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 100 15% 10%;
+    --foreground: 90 20% 94%;
+    --card: 100 14% 13%;
+    --card-foreground: 90 20% 94%;
+    --popover: 100 14% 13%;
+    --popover-foreground: 90 20% 94%;
+    --primary: 96 25% 62%;
+    --primary-foreground: 100 15% 10%;
+    --secondary: 100 12% 18%;
+    --secondary-foreground: 90 20% 94%;
+    --muted: 100 12% 18%;
+    --muted-foreground: 90 10% 65%;
+    --accent: 100 12% 20%;
+    --accent-foreground: 90 20% 94%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 90 20% 94%;
+    --border: 100 12% 22%;
+    --input: 100 12% 22%;
+    --ring: 96 25% 62%;
   }
+
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  body { @apply bg-background text-foreground font-sans; }
+  h1, h2, h3, h4 { @apply font-serif; }
 }
+
+html { scroll-behavior: smooth; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeInUp { animation: fadeInUp 0.6s ease-out; }

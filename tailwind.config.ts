@@ -22,6 +22,22 @@ const config: Config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        sage: {
+          50: "#f4f7f1",
+          100: "#e6ede2",
+          200: "#d3ddc9",
+          300: "#a9c398",
+          400: "#8bab77",
+          500: "#6b8a5a",
+          600: "#557146",
+          700: "#425939",
+          800: "#33452c",
+          900: "#283823",
+        },
+      },
+      fontFamily: {
+        serif: ["var(--font-heading)"],
+        sans: ["var(--font-body)"],
       },
       borderRadius: {
         lg: "var(--radius)",
