@@ -31,6 +31,10 @@ export function Navigation({ isFamily: initialIsFamily }: NavigationProps) {
     setMounted(true)
   }, [])
 
+  useEffect(() => {
+    setIsFamily(initialIsFamily)
+  }, [initialIsFamily])
+
   const handleLogout = async () => {
     await logoutFamily()
     setIsFamily(false)

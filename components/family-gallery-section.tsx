@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Camera, ImageIcon, Loader2, Lock, Plus, Send, Trash2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,7 @@ interface FamilyGallerySectionProps {
 }
 
 export function FamilyGallerySection({ initialImages, initialIsFamily }: FamilyGallerySectionProps) {
+  const router = useRouter()
   const [images, setImages] = useState(initialImages)
   const [isFamily, setIsFamily] = useState(initialIsFamily)
   const [showLogin, setShowLogin] = useState(false)
@@ -29,7 +31,12 @@ export function FamilyGallerySection({ initialImages, initialIsFamily }: FamilyG
   const [file, setFile] = useState<File | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setIsFamily(initialIsFamily)
+  }, [initialIsFamily])
 
   const refresh = async () => {
     setImages(await listGalleryImages("family"))
@@ -98,13 +105,17 @@ export function FamilyGallerySection({ initialImages, initialIsFamily }: FamilyG
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((image) => (
             <Card key={image.id} className="group relative overflow-hidden border-0 shadow-lg">
-              <div className="relative aspect-square">
+              <button
+                type="button"
+                onClick={() => setSelectedImage(image)}
+                className="relative block aspect-square w-full cursor-zoom-in"
+              >
                 <Image src={image.url} alt={image.title} fill className="object-cover" />
-                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4 text-left text-white opacity-0 transition-opacity group-hover:opacity-100">
                   <h3 className="font-semibold">{image.title}</h3>
                   <p className="text-xs text-gray-200">{formatRelativeDate(image.createdAt)}</p>
                 </div>
-              </div>
+              </button>
               {isFamily && (
                 <Button
                   variant="destructive"
@@ -158,12 +169,34 @@ export function FamilyGallerySection({ initialImages, initialIsFamily }: FamilyG
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none">
+          {selectedImage && (
+            <div className="space-y-3">
+              <DialogHeader>
+                <DialogTitle className="sr-only">{selectedImage.title}</DialogTitle>
+              </DialogHeader>
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+                <Image src={selectedImage.url} alt={selectedImage.title} fill className="object-contain" />
+              </div>
+              <div className="rounded-lg bg-background/90 p-4 text-center backdrop-blur">
+                <h3 className="font-semibold text-sage-800 dark:text-sage-100">{selectedImage.title}</h3>
+                {selectedImage.description && (
+                  <p className="mt-1 text-sm text-sage-600 dark:text-sage-300">{selectedImage.description}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <FamilyLoginDialog
         open={showLogin}
         onOpenChange={setShowLogin}
         onSuccess={() => {
           setIsFamily(true)
           setShowUpload(true)
+          router.refresh()
         }}
       />
     </section>

@@ -31,7 +31,7 @@ export function MusicSection() {
           <Badge variant="secondary">De: Israel Andreo</Badge>
         </div>
 
-        <Card className="border-0 bg-white/80 shadow-2xl dark:bg-sage-800/80">
+        <Card className="border-0 bg-white/80 shadow-2xl dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
           <CardContent className="p-8 md:p-12">
             <div className="mb-8 flex justify-center">
               <button

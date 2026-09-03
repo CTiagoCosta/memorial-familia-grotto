@@ -26,7 +26,7 @@ export function ChildrenTestimonialsSection() {
             <Card
               key={item.name}
               onClick={() => setOpenIndex(index)}
-              className="cursor-pointer border-0 bg-white/80 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-sage-800/80"
+              className="cursor-pointer border-0 bg-white/80 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl dark:border dark:border-sage-700/60 dark:bg-sage-800/80"
             >
               <CardContent className="p-8 text-center">
                 <div className="mx-auto mb-6 h-24 w-24 overflow-hidden rounded-full border-2 border-sage-300">

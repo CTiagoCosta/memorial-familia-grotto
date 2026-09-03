@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { PersonMemoriesSection } from "./person-memories-section"
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
+
 vi.mock("@/actions/gallery", () => ({
   listGalleryImages: vi.fn(),
   uploadGalleryImage: vi.fn(),

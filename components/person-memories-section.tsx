@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Camera, Heart, ImageIcon, Loader2, Lock, Plus, Send, Trash2, Upload } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -46,6 +47,7 @@ export function PersonMemoriesSection({
   initialTestimonials,
   initialIsFamily,
 }: PersonMemoriesSectionProps) {
+  const router = useRouter()
   const [person, setPerson] = useState<Person>(initialPerson)
   const [galleries, setGalleries] = useState(initialGalleries)
   const [testimonials, setTestimonials] = useState(initialTestimonials)
@@ -59,7 +61,12 @@ export function PersonMemoriesSection({
   const [newMessage, setNewMessage] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setIsFamily(initialIsFamily)
+  }, [initialIsFamily])
 
   const images = galleries[person]
   const mural = testimonials[person]
@@ -165,13 +172,17 @@ export function PersonMemoriesSection({
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {images.map((image) => (
               <Card key={image.id} className="group relative overflow-hidden border-0 shadow-lg">
-                <div className="relative aspect-square">
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(image)}
+                  className="relative block aspect-square w-full cursor-zoom-in"
+                >
                   <Image src={image.url} alt={image.title} fill className="object-cover" />
-                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4 text-left text-white opacity-0 transition-opacity group-hover:opacity-100">
                     <h3 className="font-semibold">{image.title}</h3>
                     <p className="text-xs text-gray-200">{formatRelativeDate(image.createdAt)}</p>
                   </div>
-                </div>
+                </button>
                 {isFamily && (
                   <Button
                     variant="destructive"
@@ -192,7 +203,7 @@ export function PersonMemoriesSection({
             Mural de Depoimentos — {PEOPLE.find((p) => p.id === person)?.name}
           </h3>
 
-          <Card className="mb-8 border-0 bg-white/80 shadow-lg dark:bg-sage-800/80">
+          <Card className="mb-8 border-0 bg-white/80 shadow-lg dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
             <CardContent className="space-y-3 p-6">
               <Input placeholder="Seu nome" value={newName} onChange={(e) => setNewName(e.target.value)} />
               <Textarea
@@ -208,7 +219,7 @@ export function PersonMemoriesSection({
 
           <div className="space-y-4">
             {mural.map((testimonial) => (
-              <Card key={testimonial.id} className="border-0 bg-white/80 shadow-md dark:bg-sage-800/80">
+              <Card key={testimonial.id} className="border-0 bg-white/80 shadow-md dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
                 <CardContent className="p-6">
                   <div className="mb-2 flex items-center justify-between">
                     <h4 className="font-semibold text-sage-800 dark:text-sage-100">{testimonial.name}</h4>
@@ -270,12 +281,34 @@ export function PersonMemoriesSection({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none">
+          {selectedImage && (
+            <div className="space-y-3">
+              <DialogHeader>
+                <DialogTitle className="sr-only">{selectedImage.title}</DialogTitle>
+              </DialogHeader>
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+                <Image src={selectedImage.url} alt={selectedImage.title} fill className="object-contain" />
+              </div>
+              <div className="rounded-lg bg-background/90 p-4 text-center backdrop-blur">
+                <h3 className="font-semibold text-sage-800 dark:text-sage-100">{selectedImage.title}</h3>
+                {selectedImage.description && (
+                  <p className="mt-1 text-sm text-sage-600 dark:text-sage-300">{selectedImage.description}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <FamilyLoginDialog
         open={showLogin}
         onOpenChange={setShowLogin}
         onSuccess={() => {
           setIsFamily(true)
           setShowUpload(true)
+          router.refresh()
         }}
       />
     </section>
