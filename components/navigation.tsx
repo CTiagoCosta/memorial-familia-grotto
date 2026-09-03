@@ -60,7 +60,10 @@ export function Navigation({ isFamily: initialIsFamily }: NavigationProps) {
         <div className="flex items-center gap-3">
           {isFamily && (
             <>
-              <Badge variant="secondary" className="border-sage-300 bg-sage-100 text-sage-800">
+              <Badge
+                variant="secondary"
+                className="border-sage-300 bg-sage-100 text-sage-800 hover:bg-sage-100 dark:border-sage-700 dark:bg-sage-800 dark:text-sage-100 dark:hover:bg-sage-800"
+              >
                 <Shield className="mr-1 h-3 w-3" /> Família
               </Badge>
               <Button variant="ghost" size="sm" onClick={handleLogout}>
