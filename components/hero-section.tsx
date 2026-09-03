@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { Button } from "@/components/ui/button"
 import { israelContent } from "@/content/israel"
 import { soniaContent } from "@/content/sonia"
 
@@ -33,12 +34,9 @@ export function HeroSection() {
         <p className="mx-auto mb-10 max-w-2xl text-lg text-sage-700 dark:text-sage-200">
           Uma vida de amor, união e família. Para sempre em nossos corações.
         </p>
-        <a
-          href="#galeria-familia"
-          className="inline-flex items-center rounded-full bg-sage-500 px-8 py-3 text-white shadow-lg transition-colors hover:bg-sage-600"
-        >
-          Ver galeria da família
-        </a>
+        <Button asChild className="rounded-full bg-sage-500 px-8 py-3 text-white shadow-lg hover:bg-sage-600">
+          <a href="#galeria-familia">Ver galeria da família</a>
+        </Button>
       </div>
     </section>
   )
