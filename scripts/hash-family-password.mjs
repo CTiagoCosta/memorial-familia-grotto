@@ -7,5 +7,11 @@ if (!password) {
 }
 
 const hash = await bcrypt.hash(password, 12)
-console.log("\nFAMILY_PASSWORD_HASH=" + hash + "\n")
-console.log("Copie a linha acima para o .env.local e para as variáveis de ambiente da Vercel.")
+const escapedHash = hash.replaceAll("$", "\\$")
+
+console.log("\nPara o .env.local (o Next.js expande $ em arquivos .env, por isso os $ abaixo vêm escapados com \\$):")
+console.log("FAMILY_PASSWORD_HASH=" + escapedHash)
+
+console.log("\nPara as variáveis de ambiente da Vercel (cole o valor sem escape, direto no campo):")
+console.log("FAMILY_PASSWORD_HASH=" + hash)
+console.log()

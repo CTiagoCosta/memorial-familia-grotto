@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Heart, LogOut, Moon, Shield, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
@@ -25,6 +25,11 @@ export function Navigation({ isFamily: initialIsFamily }: NavigationProps) {
   const [isFamily, setIsFamily] = useState(initialIsFamily)
   const { theme, setTheme } = useTheme()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     await logoutFamily()
@@ -61,7 +66,10 @@ export function Navigation({ isFamily: initialIsFamily }: NavigationProps) {
           )}
           <div className="flex items-center gap-2">
             <Sun className="h-4 w-4 text-sage-500" />
-            <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
+            <Switch
+              checked={mounted && theme === "dark"}
+              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+            />
             <Moon className="h-4 w-4 text-sage-500" />
           </div>
         </div>

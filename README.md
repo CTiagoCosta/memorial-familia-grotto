@@ -13,9 +13,9 @@ Next.js 15 (App Router) + React 19 + Tailwind + shadcn/ui + Supabase (Postgres +
 3. No SQL Editor do Supabase, rode o conteúdo de `supabase/schema.sql`
 4. Em Storage, crie um bucket público chamado `memorial-photos`
 5. Copie `.env.example` para `.env.local` e preencha:
-   - `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (em Project Settings > API do Supabase — use a **service_role key**, não a anon key)
+   - `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` (em Project Settings > API Keys do Supabase, aba **"Legacy anon, service_role API keys"** — use a `service_role` key nesse formato JWT, começando com `eyJ...`. **Não** use a `sb_secret_...` da aba "Publishable and secret API keys": esse formato novo não é compatível com a versão do `@supabase/supabase-js` usada aqui e causa erro `JWT issued at future`.)
    - `SESSION_SECRET` — qualquer string longa e aleatória
-   - `FAMILY_PASSWORD_HASH` — gere com `node scripts/hash-family-password.mjs "sua-senha-de-familia"`
+   - `FAMILY_PASSWORD_HASH` — gere com `node scripts/hash-family-password.mjs "sua-senha-de-familia"`. **Atenção:** cole no `.env.local` a versão com `\$` (escapada) que o script imprime — o Next.js expande `$` em arquivos `.env`, e um hash bcrypt sem escape (`$2a$12$...`) é truncado silenciosamente. Na Vercel use a versão sem escape.
 6. `npm run dev` e acesse http://localhost:3000
 
 ## Deploy
