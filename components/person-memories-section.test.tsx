@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { PersonMemoriesSection } from "./person-memories-section"
+import { PersonFilterProvider, usePersonFilter } from "./person-filter-context"
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -48,27 +49,49 @@ const israelTestimonial = {
 }
 
 const props = {
-  initialPerson: "israel" as const,
   initialGalleries: { israel: [israelImage], sonia: [soniaImage] },
   initialTestimonials: { israel: [israelTestimonial], sonia: [] },
   initialIsFamily: false,
 }
 
+function renderSection() {
+  return render(
+    <PersonFilterProvider>
+      <PersonMemoriesSection {...props} />
+    </PersonFilterProvider>,
+  )
+}
+
+function TestPersonPicker({ person }: { person: "israel" | "sonia" }) {
+  const { togglePerson } = usePersonFilter()
+  return <button onClick={() => togglePerson(person)}>selecionar {person} (test)</button>
+}
+
 describe("PersonMemoriesSection", () => {
-  it("shows Israel's content by default", () => {
-    render(<PersonMemoriesSection {...props} />)
+  it("shows Israel's and Sonia's content side by side by default", () => {
+    renderSection()
     expect(screen.getByText("No sítio")).toBeInTheDocument()
     expect(screen.getByText("Vai fazer muita falta")).toBeInTheDocument()
-    expect(screen.queryByText("Aniversário")).not.toBeInTheDocument()
+    expect(screen.getByText("Aniversário")).toBeInTheDocument()
   })
 
-  it("switches to Sonia's content when her tab is selected", async () => {
+  it("shows only Sonia's column, plus a reset control, when Sonia is selected", async () => {
     const user = userEvent.setup()
-    render(<PersonMemoriesSection {...props} />)
+    render(
+      <PersonFilterProvider>
+        <TestPersonPicker person="sonia" />
+        <PersonMemoriesSection {...props} />
+      </PersonFilterProvider>,
+    )
 
-    await user.click(screen.getByRole("tab", { name: /sonia/i }))
+    await user.click(screen.getByText("selecionar sonia (test)"))
 
     expect(screen.getByText("Aniversário")).toBeInTheDocument()
     expect(screen.queryByText("No sítio")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /mostrar os dois/i }))
+
+    expect(screen.getByText("No sítio")).toBeInTheDocument()
+    expect(screen.getByText("Aniversário")).toBeInTheDocument()
   })
 })

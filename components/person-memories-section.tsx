@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Camera, Heart, ImageIcon, Loader2, Lock, Plus, Send, Trash2, Upload } from "lucide-react"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,10 +16,10 @@ import { addTestimonial, deleteTestimonial, likeTestimonial, listTestimonials } 
 import { formatRelativeDate } from "@/lib/format"
 import { israelContent } from "@/content/israel"
 import { soniaContent } from "@/content/sonia"
+import { usePersonFilter } from "@/components/person-filter-context"
 import type { GalleryImage, Person, Testimonial } from "@/types/database"
 
 interface PersonMemoriesSectionProps {
-  initialPerson: Person
   initialGalleries: Record<Person, GalleryImage[]>
   initialTestimonials: Record<Person, Testimonial[]>
   initialIsFamily: boolean
@@ -42,16 +41,72 @@ function getSessionId(): string {
 }
 
 export function PersonMemoriesSection({
-  initialPerson,
   initialGalleries,
   initialTestimonials,
   initialIsFamily,
 }: PersonMemoriesSectionProps) {
-  const router = useRouter()
-  const [person, setPerson] = useState<Person>(initialPerson)
-  const [galleries, setGalleries] = useState(initialGalleries)
-  const [testimonials, setTestimonials] = useState(initialTestimonials)
+  const { selectedPerson, clearPerson } = usePersonFilter()
   const [isFamily, setIsFamily] = useState(initialIsFamily)
+
+  useEffect(() => {
+    setIsFamily(initialIsFamily)
+  }, [initialIsFamily])
+
+  const peopleToShow = selectedPerson ? PEOPLE.filter((p) => p.id === selectedPerson) : PEOPLE
+
+  return (
+    <section id="memorias-por-pessoa" className="bg-sage-50 py-20 dark:bg-sage-900/40">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-12 text-center">
+          <h2 className="mb-6 text-4xl font-bold text-sage-800 dark:text-sage-100 md:text-5xl">Memórias por Pessoa</h2>
+          {selectedPerson && (
+            <Button variant="outline" onClick={clearPerson}>
+              Mostrar os dois
+            </Button>
+          )}
+        </div>
+
+        <div className={`grid gap-16 ${peopleToShow.length === 2 ? "lg:grid-cols-2" : ""}`}>
+          {peopleToShow.map((p) => (
+            <PersonMemoriesColumn
+              key={p.id}
+              person={p.id}
+              personName={p.name}
+              initialImages={initialGalleries[p.id]}
+              initialTestimonials={initialTestimonials[p.id]}
+              isFamily={isFamily}
+              onFamilyLogin={() => setIsFamily(true)}
+              wide={peopleToShow.length === 1}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+interface PersonMemoriesColumnProps {
+  person: Person
+  personName: string
+  initialImages: GalleryImage[]
+  initialTestimonials: Testimonial[]
+  isFamily: boolean
+  onFamilyLogin: () => void
+  wide: boolean
+}
+
+function PersonMemoriesColumn({
+  person,
+  personName,
+  initialImages,
+  initialTestimonials,
+  isFamily,
+  onFamilyLogin,
+  wide,
+}: PersonMemoriesColumnProps) {
+  const router = useRouter()
+  const [images, setImages] = useState(initialImages)
+  const [mural, setMural] = useState(initialTestimonials)
   const [showLogin, setShowLogin] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const [title, setTitle] = useState("")
@@ -64,21 +119,14 @@ export function PersonMemoriesSection({
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    setIsFamily(initialIsFamily)
-  }, [initialIsFamily])
-
-  const images = galleries[person]
-  const mural = testimonials[person]
-
   const refreshGallery = async () => {
     const updated = await listGalleryImages(person)
-    setGalleries((prev) => ({ ...prev, [person]: updated }))
+    setImages(updated)
   }
 
   const refreshTestimonials = async () => {
     const updated = await listTestimonials(person)
-    setTestimonials((prev) => ({ ...prev, [person]: updated }))
+    setMural(updated)
   }
 
   const handleAddPhotoClick = () => {
@@ -138,108 +186,93 @@ export function PersonMemoriesSection({
   }
 
   return (
-    <section id="memorias-por-pessoa" className="bg-sage-50 py-20 dark:bg-sage-900/40">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center">
-          <h2 className="mb-6 text-4xl font-bold text-sage-800 dark:text-sage-100 md:text-5xl">Memórias por Pessoa</h2>
-          <Tabs value={person} onValueChange={(value) => setPerson(value as Person)}>
-            <TabsList>
-              {PEOPLE.map((p) => (
-                <TabsTrigger key={p.id} value={p.id}>
-                  {p.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+    <div>
+      <div className="mb-16">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-2xl font-semibold text-sage-800 dark:text-sage-100">Galeria de {personName}</h3>
+          <Button onClick={handleAddPhotoClick}>
+            {isFamily ? <Plus className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
+            Adicionar Foto
+          </Button>
         </div>
 
-        <div className="mb-16">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-2xl font-semibold text-sage-800 dark:text-sage-100">Galeria de {PEOPLE.find((p) => p.id === person)?.name}</h3>
-            <Button onClick={handleAddPhotoClick}>
-              {isFamily ? <Plus className="mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
-              Adicionar Foto
-            </Button>
+        {images.length === 0 && (
+          <div className="py-8 text-center">
+            <ImageIcon className="mx-auto mb-2 h-12 w-12 text-sage-300" />
+            <p className="text-sage-500">Nenhuma foto foi adicionada ainda</p>
           </div>
+        )}
 
-          {images.length === 0 && (
-            <div className="py-8 text-center">
-              <ImageIcon className="mx-auto mb-2 h-12 w-12 text-sage-300" />
-              <p className="text-sage-500">Nenhuma foto foi adicionada ainda</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {images.map((image) => (
-              <Card key={image.id} className="group relative overflow-hidden border-0 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => setSelectedImage(image)}
-                  className="relative block aspect-square w-full cursor-zoom-in"
+        <div className={`grid grid-cols-1 gap-6 sm:grid-cols-2 ${wide ? "xl:grid-cols-3" : ""}`}>
+          {images.map((image) => (
+            <Card key={image.id} className="group relative overflow-hidden border-0 shadow-lg">
+              <button
+                type="button"
+                onClick={() => setSelectedImage(image)}
+                className="relative block aspect-square w-full cursor-zoom-in"
+              >
+                <Image src={image.url} alt={image.title} fill className="object-cover" />
+                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4 text-left text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  <h3 className="font-semibold">{image.title}</h3>
+                  <p className="text-xs text-gray-200">{formatRelativeDate(image.createdAt)}</p>
+                </div>
+              </button>
+              {isFamily && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={() => handleDeletePhoto(image.id)}
                 >
-                  <Image src={image.url} alt={image.title} fill className="object-cover" />
-                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 to-transparent p-4 text-left text-white opacity-0 transition-opacity group-hover:opacity-100">
-                    <h3 className="font-semibold">{image.title}</h3>
-                    <p className="text-xs text-gray-200">{formatRelativeDate(image.createdAt)}</p>
-                  </div>
-                </button>
-                {isFamily && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100"
-                    onClick={() => handleDeletePhoto(image.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </Card>
-            ))}
-          </div>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </Card>
+          ))}
         </div>
+      </div>
 
-        <div>
-          <h3 className="mb-6 text-2xl font-semibold text-sage-800 dark:text-sage-100">
-            Mural de Depoimentos — {PEOPLE.find((p) => p.id === person)?.name}
-          </h3>
+      <div>
+        <h3 className="mb-6 text-2xl font-semibold text-sage-800 dark:text-sage-100">
+          Mural de Depoimentos — {personName}
+        </h3>
 
-          <Card className="mb-8 border-0 bg-white/80 shadow-lg dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
-            <CardContent className="space-y-3 p-6">
-              <Input placeholder="Seu nome" value={newName} onChange={(e) => setNewName(e.target.value)} />
-              <Textarea
-                placeholder="Compartilhe uma memória especial..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              <Button className="w-full" onClick={handleAddTestimonial}>
-                <Send className="mr-2 h-4 w-4" /> Enviar Mensagem
-              </Button>
-            </CardContent>
-          </Card>
+        <Card className="mb-8 border-0 bg-white/80 shadow-lg dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
+          <CardContent className="space-y-3 p-6">
+            <Input placeholder="Seu nome" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Textarea
+              placeholder="Compartilhe uma memória especial..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
+            <Button className="w-full" onClick={handleAddTestimonial}>
+              <Send className="mr-2 h-4 w-4" /> Enviar Mensagem
+            </Button>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-4">
-            {mural.map((testimonial) => (
-              <Card key={testimonial.id} className="border-0 bg-white/80 shadow-md dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
-                <CardContent className="p-6">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h4 className="font-semibold text-sage-800 dark:text-sage-100">{testimonial.name}</h4>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleLike(testimonial.id)}>
-                        <Heart className="mr-1 h-4 w-4" /> {testimonial.likes}
+        <div className="space-y-4">
+          {mural.map((testimonial) => (
+            <Card key={testimonial.id} className="border-0 bg-white/80 shadow-md dark:border dark:border-sage-700/60 dark:bg-sage-800/80">
+              <CardContent className="p-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="font-semibold text-sage-800 dark:text-sage-100">{testimonial.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleLike(testimonial.id)}>
+                      <Heart className="mr-1 h-4 w-4" /> {testimonial.likes}
+                    </Button>
+                    {isFamily && (
+                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTestimonial(testimonial.id)}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                      {isFamily && (
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteTestimonial(testimonial.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
-                  <p className="text-sage-600 dark:text-sage-300">{testimonial.message}</p>
-                  <p className="mt-2 text-xs text-sage-400">{formatRelativeDate(testimonial.createdAt)}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
+                <p className="text-sage-600 dark:text-sage-300">{testimonial.message}</p>
+                <p className="mt-2 text-xs text-sage-400">{formatRelativeDate(testimonial.createdAt)}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
@@ -306,11 +339,11 @@ export function PersonMemoriesSection({
         open={showLogin}
         onOpenChange={setShowLogin}
         onSuccess={() => {
-          setIsFamily(true)
+          onFamilyLogin()
           setShowUpload(true)
           router.refresh()
         }}
       />
-    </section>
+    </div>
   )
 }
