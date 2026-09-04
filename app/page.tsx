@@ -3,6 +3,7 @@ import { ChildrenTestimonialsSection } from "@/components/children-testimonials-
 import { MusicSection } from "@/components/music-section"
 import { FamilyGallerySection } from "@/components/family-gallery-section"
 import { PersonMemoriesSection } from "@/components/person-memories-section"
+import { PersonFilterProvider } from "@/components/person-filter-context"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { listGalleryImages } from "@/actions/gallery"
@@ -21,19 +22,20 @@ export default async function MemorialPage() {
     ])
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navigation isFamily={isFamily} />
-      <HeroSection />
-      <ChildrenTestimonialsSection />
-      <MusicSection />
-      <FamilyGallerySection initialImages={familyImages} initialIsFamily={isFamily} />
-      <PersonMemoriesSection
-        initialPerson="israel"
-        initialGalleries={{ israel: israelImages, sonia: soniaImages }}
-        initialTestimonials={{ israel: israelTestimonials, sonia: soniaTestimonials }}
-        initialIsFamily={isFamily}
-      />
-      <Footer />
-    </div>
+    <PersonFilterProvider>
+      <div className="flex min-h-screen flex-col">
+        <Navigation isFamily={isFamily} />
+        <HeroSection />
+        <ChildrenTestimonialsSection />
+        <MusicSection />
+        <FamilyGallerySection initialImages={familyImages} initialIsFamily={isFamily} />
+        <PersonMemoriesSection
+          initialGalleries={{ israel: israelImages, sonia: soniaImages }}
+          initialTestimonials={{ israel: israelTestimonials, sonia: soniaTestimonials }}
+          initialIsFamily={isFamily}
+        />
+        <Footer />
+      </div>
+    </PersonFilterProvider>
   )
 }
