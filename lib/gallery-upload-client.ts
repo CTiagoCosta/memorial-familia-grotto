@@ -30,7 +30,7 @@ export async function uploadGalleryPhoto(
     return { error: signatureResult.error }
   }
 
-  const { cloudName, apiKey, timestamp, publicId, signature } = signatureResult
+  const { cloudName, apiKey, timestamp, publicId, assetFolder, signature } = signatureResult
 
   const uploadForm = new FormData()
   uploadForm.set("file", file)
@@ -38,6 +38,7 @@ export async function uploadGalleryPhoto(
   uploadForm.set("timestamp", String(timestamp))
   uploadForm.set("signature", signature)
   uploadForm.set("public_id", publicId)
+  uploadForm.set("asset_folder", assetFolder)
 
   try {
     const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {

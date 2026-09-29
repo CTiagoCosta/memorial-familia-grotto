@@ -52,11 +52,11 @@ describe("lib/cloudinary", () => {
     expect(() => imageUrl("memorial-grotto/family/abc", 800)).toThrow("CLOUDINARY_CLOUD_NAME")
   })
 
-  it("createUploadSignature signs the exact public_id and timestamp and returns upload params", async () => {
+  it("createUploadSignature signs the exact public_id, asset_folder and timestamp and returns upload params", async () => {
     setEnv()
     const { createUploadSignature } = await import("./cloudinary")
 
-    const result = createUploadSignature("memorial-grotto/family/abc-123")
+    const result = createUploadSignature("memorial-grotto/family/abc-123", "memorial-grotto/family")
 
     expect(configMock).toHaveBeenCalledWith({
       cloud_name: "demo-cloud",
@@ -64,7 +64,11 @@ describe("lib/cloudinary", () => {
       api_secret: "secret-xyz",
     })
     expect(apiSignRequestMock).toHaveBeenCalledWith(
-      { public_id: "memorial-grotto/family/abc-123", timestamp: expect.any(Number) },
+      {
+        asset_folder: "memorial-grotto/family",
+        public_id: "memorial-grotto/family/abc-123",
+        timestamp: expect.any(Number),
+      },
       "secret-xyz",
     )
     expect(result).toEqual({
@@ -72,6 +76,7 @@ describe("lib/cloudinary", () => {
       apiKey: "key-123",
       timestamp: expect.any(Number),
       publicId: "memorial-grotto/family/abc-123",
+      assetFolder: "memorial-grotto/family",
       signature: "signed-abc",
     })
   })
@@ -84,7 +89,9 @@ describe("lib/cloudinary", () => {
       CLOUDINARY_API_SECRET: "",
     }
     const { createUploadSignature } = await import("./cloudinary")
-    expect(() => createUploadSignature("memorial-grotto/family/abc-123")).toThrow("CLOUDINARY_API_SECRET")
+    expect(() => createUploadSignature("memorial-grotto/family/abc-123", "memorial-grotto/family")).toThrow(
+      "CLOUDINARY_API_SECRET",
+    )
   })
 
   it("verifyAssetExists returns true when the resource lookup succeeds", async () => {

@@ -85,6 +85,7 @@ describe("getGalleryUploadSignature", () => {
       apiKey: "key",
       timestamp: 123,
       publicId: "memorial-grotto/family/11111111-1111-1111-1111-111111111111",
+      assetFolder: "memorial-grotto/family",
       signature: "sig",
     })
 
@@ -92,12 +93,14 @@ describe("getGalleryUploadSignature", () => {
 
     expect(createUploadSignatureMock).toHaveBeenCalledWith(
       "memorial-grotto/family/11111111-1111-1111-1111-111111111111",
+      "memorial-grotto/family",
     )
     expect(result).toEqual({
       cloudName: "demo",
       apiKey: "key",
       timestamp: 123,
       publicId: "memorial-grotto/family/11111111-1111-1111-1111-111111111111",
+      assetFolder: "memorial-grotto/family",
       signature: "sig",
     })
   })

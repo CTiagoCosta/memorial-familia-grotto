@@ -55,6 +55,7 @@ describe("uploadGalleryPhoto", () => {
       apiKey: "key-123",
       timestamp: 111,
       publicId: "memorial-grotto/family/abc",
+      assetFolder: "memorial-grotto/family",
       signature: "sig-abc",
     })
     vi.mocked(fetch).mockResolvedValue(
@@ -74,6 +75,7 @@ describe("uploadGalleryPhoto", () => {
     expect(body.get("timestamp")).toBe("111")
     expect(body.get("signature")).toBe("sig-abc")
     expect(body.get("public_id")).toBe("memorial-grotto/family/abc")
+    expect(body.get("asset_folder")).toBe("memorial-grotto/family")
 
     // Uses the server-generated publicId directly, not whatever Cloudinary's
     // response happens to echo back.
@@ -92,6 +94,7 @@ describe("uploadGalleryPhoto", () => {
       apiKey: "key-123",
       timestamp: 111,
       publicId: "memorial-grotto/family/abc",
+      assetFolder: "memorial-grotto/family",
       signature: "sig-abc",
     })
     vi.mocked(fetch).mockResolvedValue(new Response("", { status: 400 }))
@@ -108,6 +111,7 @@ describe("uploadGalleryPhoto", () => {
       apiKey: "key-123",
       timestamp: 111,
       publicId: "memorial-grotto/family/abc",
+      assetFolder: "memorial-grotto/family",
       signature: "sig-abc",
     })
     vi.mocked(fetch).mockRejectedValue(new TypeError("Failed to fetch"))

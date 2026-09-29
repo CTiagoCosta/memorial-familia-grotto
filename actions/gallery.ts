@@ -57,8 +57,9 @@ export async function getGalleryUploadSignature(scope: GalleryScope): Promise<Up
     return { error: "Escopo inválido." }
   }
 
-  const publicId = `${GALLERY_FOLDER}/${scope}/${crypto.randomUUID()}`
-  return createUploadSignature(publicId)
+  const assetFolder = `${GALLERY_FOLDER}/${scope}`
+  const publicId = `${assetFolder}/${crypto.randomUUID()}`
+  return createUploadSignature(publicId, assetFolder)
 }
 
 export async function registerGalleryImage(

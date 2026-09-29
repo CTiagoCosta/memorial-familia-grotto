@@ -43,19 +43,28 @@ export interface UploadSignature {
   apiKey: string
   timestamp: number
   publicId: string
+  assetFolder: string
   signature: string
 }
 
 // Signs the exact public_id (not just its folder), so the upload lands at
 // that id regardless of whether the Cloudinary account uses classic or
 // dynamic folder mode, and so the client cannot redirect the upload to a
-// different id without invalidating the signature.
-export function createUploadSignature(publicId: string): UploadSignature {
+// different id without invalidating the signature. asset_folder is signed
+// too and separately from public_id: on dynamic-folder-mode accounts,
+// combining an explicit public_id with the legacy `folder` param makes
+// Cloudinary prepend folder onto public_id (double-nesting it); asset_folder
+// is the param meant to set the Console-visible folder without touching
+// public_id at all.
+export function createUploadSignature(publicId: string, assetFolder: string): UploadSignature {
   const { cloudName, apiKey, apiSecret } = configure()
   const timestamp = Math.round(Date.now() / 1000)
-  const signature = cloudinary.utils.api_sign_request({ public_id: publicId, timestamp }, apiSecret)
+  const signature = cloudinary.utils.api_sign_request(
+    { asset_folder: assetFolder, public_id: publicId, timestamp },
+    apiSecret,
+  )
 
-  return { cloudName, apiKey, timestamp, publicId, signature }
+  return { cloudName, apiKey, timestamp, publicId, assetFolder, signature }
 }
 
 export async function verifyAssetExists(publicId: string): Promise<boolean> {
