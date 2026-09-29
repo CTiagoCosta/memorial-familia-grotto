@@ -9,16 +9,17 @@ import { Footer } from "@/components/footer"
 import { listGalleryImages } from "@/actions/gallery"
 import { listTestimonials } from "@/actions/testimonials"
 import { getFamilySession } from "@/lib/auth/get-family-session"
+import { safeList } from "@/lib/safe-list"
 
 export default async function MemorialPage() {
   const [isFamily, familyImages, israelImages, soniaImages, israelTestimonials, soniaTestimonials] =
     await Promise.all([
       getFamilySession(),
-      listGalleryImages("family"),
-      listGalleryImages("israel"),
-      listGalleryImages("sonia"),
-      listTestimonials("israel"),
-      listTestimonials("sonia"),
+      safeList(listGalleryImages("family")),
+      safeList(listGalleryImages("israel")),
+      safeList(listGalleryImages("sonia")),
+      safeList(listTestimonials("israel")),
+      safeList(listTestimonials("sonia")),
     ])
 
   return (
