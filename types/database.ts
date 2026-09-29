@@ -1,6 +1,12 @@
 export type Person = "israel" | "sonia"
 export type GalleryScope = "family" | Person
 
+const GALLERY_SCOPES: GalleryScope[] = ["family", "israel", "sonia"]
+
+export function isGalleryScope(value: string): value is GalleryScope {
+  return (GALLERY_SCOPES as string[]).includes(value)
+}
+
 export interface Testimonial {
   id: string
   person: Person
@@ -16,7 +22,7 @@ export interface GalleryImage {
   scope: GalleryScope
   title: string
   description: string | null
-  storagePath: string
+  publicId: string
   url: string
   createdAt: string
 }

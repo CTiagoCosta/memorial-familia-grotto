@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FamilyLoginDialog } from "@/components/family-login-dialog"
-import { deleteGalleryImage, listGalleryImages, uploadGalleryImage } from "@/actions/gallery"
+import { deleteGalleryImage, listGalleryImages } from "@/actions/gallery"
+import { uploadGalleryPhoto } from "@/lib/gallery-upload-client"
 import { formatRelativeDate } from "@/lib/format"
 import type { GalleryImage } from "@/types/database"
 
@@ -55,12 +56,7 @@ export function FamilyGallerySection({ initialImages, initialIsFamily }: FamilyG
     setPending(true)
     setError(null)
 
-    const formData = new FormData()
-    formData.set("title", title.trim())
-    formData.set("description", description.trim())
-    formData.set("file", file)
-
-    const result = await uploadGalleryImage("family", formData)
+    const result = await uploadGalleryPhoto("family", file, title, description)
     setPending(false)
 
     if (result.error) {

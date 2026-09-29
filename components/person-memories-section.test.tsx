@@ -10,7 +10,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/gallery", () => ({
   listGalleryImages: vi.fn(),
-  uploadGalleryImage: vi.fn(),
+  getGalleryUploadSignature: vi.fn(),
+  registerGalleryImage: vi.fn(),
   deleteGalleryImage: vi.fn(),
 }))
 vi.mock("@/actions/testimonials", () => ({
@@ -25,7 +26,7 @@ const israelImage = {
   scope: "israel" as const,
   title: "No sítio",
   description: null,
-  storagePath: "israel/1.jpg",
+  publicId: "israel/1.jpg",
   url: "https://cdn.test/israel/1.jpg",
   createdAt: "2026-01-01T00:00:00Z",
 }
@@ -34,7 +35,7 @@ const soniaImage = {
   scope: "sonia" as const,
   title: "Aniversário",
   description: null,
-  storagePath: "sonia/1.jpg",
+  publicId: "sonia/1.jpg",
   url: "https://cdn.test/sonia/1.jpg",
   createdAt: "2026-01-01T00:00:00Z",
 }
