@@ -1,5 +1,12 @@
 # Memorial Família Grotto — Design
 
+> **Atualização (2026-09-26):** o backend descrito abaixo (Supabase) foi
+> substituído por **Neon (Postgres) + Cloudinary (fotos)** — o projeto
+> gratuito do Supabase pausava depois de 7 dias de inatividade e derrubava
+> o site em produção. Ver
+> `docs/superpowers/plans/2026-09-26-migracao-neon-cloudinary.md` para a
+> arquitetura atual; as seções de Supabase abaixo são histórico.
+
 ## Contexto
 
 Memorial digital em homenagem a **Israel Andreo** (1951–2023) e **Sonia Grotto**

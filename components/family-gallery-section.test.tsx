@@ -9,7 +9,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/gallery", () => ({
   listGalleryImages: vi.fn(),
-  uploadGalleryImage: vi.fn(),
+  getGalleryUploadSignature: vi.fn(),
+  registerGalleryImage: vi.fn(),
   deleteGalleryImage: vi.fn(),
 }))
 
@@ -18,7 +19,7 @@ const sampleImage = {
   scope: "family" as const,
   title: "Piquenique em família",
   description: null,
-  storagePath: "family/1.jpg",
+  publicId: "family/1.jpg",
   url: "https://cdn.test/family/1.jpg",
   createdAt: "2026-01-01T00:00:00Z",
 }
