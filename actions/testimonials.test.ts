@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const supabaseMock = {
-  from: vi.fn(),
-}
+const sqlMock = vi.fn()
 
-vi.mock("../lib/supabase/server", () => ({
-  getServiceRoleClient: () => supabaseMock,
+vi.mock("../lib/db", () => ({
+  getSql: () => sqlMock,
 }))
 
 vi.mock("../lib/auth/get-family-session", () => ({
@@ -15,19 +13,11 @@ vi.mock("../lib/auth/get-family-session", () => ({
 import { getFamilySession } from "../lib/auth/get-family-session"
 import { addTestimonial, deleteTestimonial, likeTestimonial, listTestimonials } from "./testimonials"
 
-function mockSelectChain(rows: unknown[]) {
-  const order = vi.fn().mockResolvedValue({ data: rows, error: null })
-  const eq = vi.fn().mockReturnValue({ order })
-  const select = vi.fn().mockReturnValue({ eq })
-  supabaseMock.from.mockReturnValue({ select })
-  return { select, eq, order }
-}
-
 describe("listTestimonials", () => {
   beforeEach(() => vi.clearAllMocks())
 
   it("maps rows for the given person", async () => {
-    mockSelectChain([
+    sqlMock.mockResolvedValueOnce([
       {
         id: "1",
         person: "israel",
@@ -41,7 +31,8 @@ describe("listTestimonials", () => {
 
     const result = await listTestimonials("israel")
 
-    expect(supabaseMock.from).toHaveBeenCalledWith("testimonials")
+    expect(sqlMock).toHaveBeenCalledTimes(1)
+    expect(sqlMock.mock.calls[0].slice(1)).toContain("israel")
     expect(result).toEqual([
       {
         id: "1",
@@ -59,19 +50,18 @@ describe("listTestimonials", () => {
 describe("addTestimonial", () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it("rejects an empty name or message without touching supabase", async () => {
+  it("rejects an empty name or message without touching the database", async () => {
     const result = await addTestimonial("israel", "  ", "mensagem")
     expect(result.error).toBe("Nome e mensagem são obrigatórios.")
-    expect(supabaseMock.from).not.toHaveBeenCalled()
+    expect(sqlMock).not.toHaveBeenCalled()
   })
 
   it("inserts a trimmed testimonial when valid", async () => {
-    const insert = vi.fn().mockResolvedValue({ error: null })
-    supabaseMock.from.mockReturnValue({ insert })
+    sqlMock.mockResolvedValueOnce(undefined)
 
     const result = await addTestimonial("israel", "  Maria  ", "  Com carinho  ")
 
-    expect(insert).toHaveBeenCalledWith({ person: "israel", name: "Maria", message: "Com carinho" })
+    expect(sqlMock.mock.calls[0].slice(1)).toEqual(["israel", "Maria", "Com carinho"])
     expect(result.error).toBeNull()
   })
 })
@@ -79,30 +69,24 @@ describe("addTestimonial", () => {
 describe("likeTestimonial", () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it("adds the session and increments likes when not already liked", async () => {
-    const single = vi.fn().mockResolvedValue({ data: { likes: 1, liked_by: [] }, error: null })
-    const eqSelect = vi.fn().mockReturnValue({ single })
-    const select = vi.fn().mockReturnValue({ eq: eqSelect })
-    const update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
-    supabaseMock.from.mockReturnValue({ select, update })
+  it("sends a single atomic update and reports success when a row is updated", async () => {
+    sqlMock.mockResolvedValueOnce([{ id: "1" }])
 
     const result = await likeTestimonial("israel", "1", "session-a")
 
-    expect(update).toHaveBeenCalledWith({ likes: 2, liked_by: ["session-a"] })
+    expect(sqlMock).toHaveBeenCalledTimes(1)
+    const values = sqlMock.mock.calls[0].slice(1)
+    expect(values).toContain("session-a")
+    expect(values).toContain("1")
     expect(result.error).toBeNull()
   })
 
-  it("removes the session and decrements likes when already liked", async () => {
-    const single = vi.fn().mockResolvedValue({ data: { likes: 1, liked_by: ["session-a"] }, error: null })
-    const eqSelect = vi.fn().mockReturnValue({ single })
-    const select = vi.fn().mockReturnValue({ eq: eqSelect })
-    const update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) })
-    supabaseMock.from.mockReturnValue({ select, update })
+  it("returns an error when no testimonial matches the id", async () => {
+    sqlMock.mockResolvedValueOnce([])
 
-    const result = await likeTestimonial("israel", "1", "session-a")
+    const result = await likeTestimonial("israel", "missing", "session-a")
 
-    expect(update).toHaveBeenCalledWith({ likes: 0, liked_by: [] })
-    expect(result.error).toBeNull()
+    expect(result.error).toBe("Depoimento não encontrado.")
   })
 })
 
@@ -115,18 +99,16 @@ describe("deleteTestimonial", () => {
     const result = await deleteTestimonial("israel", "1")
 
     expect(result.error).toBe("Não autorizado.")
-    expect(supabaseMock.from).not.toHaveBeenCalled()
+    expect(sqlMock).not.toHaveBeenCalled()
   })
 
   it("deletes when the family session is valid", async () => {
     vi.mocked(getFamilySession).mockResolvedValue(true)
-    const eq = vi.fn().mockResolvedValue({ error: null })
-    const del = vi.fn().mockReturnValue({ eq })
-    supabaseMock.from.mockReturnValue({ delete: del })
+    sqlMock.mockResolvedValueOnce(undefined)
 
     const result = await deleteTestimonial("israel", "1")
 
-    expect(del).toHaveBeenCalled()
+    expect(sqlMock.mock.calls[0].slice(1)).toEqual(["1"])
     expect(result.error).toBeNull()
   })
 })

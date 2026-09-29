@@ -1,6 +1,6 @@
 "use server"
 
-import { getServiceRoleClient } from "@/lib/supabase/server"
+import { getSql } from "@/lib/db"
 import { getFamilySession } from "@/lib/auth/get-family-session"
 import type { Person, Testimonial } from "@/types/database"
 
@@ -31,15 +31,12 @@ function mapRow(row: TestimonialRow): Testimonial {
 }
 
 export async function listTestimonials(person: Person): Promise<Testimonial[]> {
-  const supabase = getServiceRoleClient()
-  const { data, error } = await supabase
-    .from("testimonials")
-    .select("*")
-    .eq("person", person)
-    .order("created_at", { ascending: false })
+  const sql = getSql()
+  const rows = (await sql`
+    select * from testimonials where person = ${person} order by created_at desc
+  `) as unknown as TestimonialRow[]
 
-  if (error) throw new Error(error.message)
-  return ((data ?? []) as TestimonialRow[]).map(mapRow)
+  return rows.map(mapRow)
 }
 
 export async function addTestimonial(person: Person, name: string, message: string): Promise<ActionResult> {
@@ -50,38 +47,34 @@ export async function addTestimonial(person: Person, name: string, message: stri
     return { error: "Nome e mensagem são obrigatórios." }
   }
 
-  const supabase = getServiceRoleClient()
-  const { error } = await supabase.from("testimonials").insert({
-    person,
-    name: trimmedName,
-    message: trimmedMessage,
-  })
+  const sql = getSql()
+  await sql`insert into testimonials (person, name, message) values (${person}, ${trimmedName}, ${trimmedMessage})`
 
-  return { error: error ? error.message : null }
+  return { error: null }
 }
 
 export async function likeTestimonial(person: Person, testimonialId: string, sessionId: string): Promise<ActionResult> {
-  const supabase = getServiceRoleClient()
+  const sql = getSql()
+  const rows = (await sql`
+    update testimonials
+    set
+      liked_by = case
+        when ${sessionId} = any(liked_by) then array_remove(liked_by, ${sessionId})
+        else array_append(liked_by, ${sessionId})
+      end,
+      likes = case
+        when ${sessionId} = any(liked_by) then likes - 1
+        else likes + 1
+      end
+    where id = ${testimonialId}
+    returning id
+  `) as unknown as { id: string }[]
 
-  const { data, error: fetchError } = await supabase
-    .from("testimonials")
-    .select("likes, liked_by")
-    .eq("id", testimonialId)
-    .single()
-
-  if (fetchError || !data) {
-    return { error: fetchError?.message ?? "Depoimento não encontrado." }
+  if (rows.length === 0) {
+    return { error: "Depoimento não encontrado." }
   }
 
-  const alreadyLiked = (data.liked_by as string[]).includes(sessionId)
-  const likedBy = alreadyLiked
-    ? (data.liked_by as string[]).filter((id) => id !== sessionId)
-    : [...(data.liked_by as string[]), sessionId]
-  const likes = alreadyLiked ? data.likes - 1 : data.likes + 1
-
-  const { error } = await supabase.from("testimonials").update({ likes, liked_by: likedBy }).eq("id", testimonialId)
-
-  return { error: error ? error.message : null }
+  return { error: null }
 }
 
 export async function deleteTestimonial(person: Person, testimonialId: string): Promise<ActionResult> {
@@ -90,8 +83,8 @@ export async function deleteTestimonial(person: Person, testimonialId: string): 
     return { error: "Não autorizado." }
   }
 
-  const supabase = getServiceRoleClient()
-  const { error } = await supabase.from("testimonials").delete().eq("id", testimonialId)
+  const sql = getSql()
+  await sql`delete from testimonials where id = ${testimonialId}`
 
-  return { error: error ? error.message : null }
+  return { error: null }
 }
