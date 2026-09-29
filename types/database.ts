@@ -16,7 +16,7 @@ export interface GalleryImage {
   scope: GalleryScope
   title: string
   description: string | null
-  storagePath: string
+  publicId: string
   url: string
   createdAt: string
 }

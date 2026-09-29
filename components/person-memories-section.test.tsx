@@ -25,7 +25,7 @@ const israelImage = {
   scope: "israel" as const,
   title: "No sítio",
   description: null,
-  storagePath: "israel/1.jpg",
+  publicId: "israel/1.jpg",
   url: "https://cdn.test/israel/1.jpg",
   createdAt: "2026-01-01T00:00:00Z",
 }
@@ -34,7 +34,7 @@ const soniaImage = {
   scope: "sonia" as const,
   title: "Aniversário",
   description: null,
-  storagePath: "sonia/1.jpg",
+  publicId: "sonia/1.jpg",
   url: "https://cdn.test/sonia/1.jpg",
   createdAt: "2026-01-01T00:00:00Z",
 }

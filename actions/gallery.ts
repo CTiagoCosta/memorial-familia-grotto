@@ -25,7 +25,7 @@ function mapRow(row: GalleryImageRow, url: string): GalleryImage {
     scope: row.scope,
     title: row.title,
     description: row.description,
-    storagePath: row.storage_path,
+    publicId: row.storage_path,
     url,
     createdAt: row.created_at,
   }
