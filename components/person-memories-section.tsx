@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { FamilyLoginDialog } from "@/components/family-login-dialog"
-import { deleteGalleryImage, listGalleryImages, uploadGalleryImage } from "@/actions/gallery"
+import { deleteGalleryImage, listGalleryImages } from "@/actions/gallery"
+import { uploadGalleryPhoto } from "@/lib/gallery-upload-client"
 import { addTestimonial, deleteTestimonial, likeTestimonial, listTestimonials } from "@/actions/testimonials"
 import { formatRelativeDate } from "@/lib/format"
 import { israelContent } from "@/content/israel"
@@ -139,12 +140,7 @@ function PersonMemoriesColumn({
     setPending(true)
     setError(null)
 
-    const formData = new FormData()
-    formData.set("title", title.trim())
-    formData.set("description", description.trim())
-    formData.set("file", file)
-
-    const result = await uploadGalleryImage(person, formData)
+    const result = await uploadGalleryPhoto(person, file, title, description)
     setPending(false)
 
     if (result.error) {

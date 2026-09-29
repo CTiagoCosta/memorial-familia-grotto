@@ -10,7 +10,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/gallery", () => ({
   listGalleryImages: vi.fn(),
-  uploadGalleryImage: vi.fn(),
+  getGalleryUploadSignature: vi.fn(),
+  registerGalleryImage: vi.fn(),
   deleteGalleryImage: vi.fn(),
 }))
 vi.mock("@/actions/testimonials", () => ({
