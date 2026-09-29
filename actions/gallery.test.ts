@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const { sqlMock, createUploadSignatureMock, verifyAssetExistsMock, destroyAssetMock, imageUrlMock } = vi.hoisted(
   () => ({
@@ -53,7 +53,12 @@ describe("listGalleryImages", () => {
 })
 
 describe("getGalleryUploadSignature", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(crypto, "randomUUID").mockReturnValue("11111111-1111-1111-1111-111111111111")
+  })
+
+  afterEach(() => vi.restoreAllMocks())
 
   it("rejects when there is no valid family session", async () => {
     vi.mocked(getFamilySession).mockResolvedValue(false)
@@ -64,24 +69,35 @@ describe("getGalleryUploadSignature", () => {
     expect(createUploadSignatureMock).not.toHaveBeenCalled()
   })
 
-  it("returns a signature scoped to memorial-grotto/<scope> when authorized", async () => {
+  it("rejects a scope outside family/israel/sonia", async () => {
+    vi.mocked(getFamilySession).mockResolvedValue(true)
+
+    const result = await getGalleryUploadSignature("admin" as never)
+
+    expect(result).toEqual({ error: "Escopo inválido." })
+    expect(createUploadSignatureMock).not.toHaveBeenCalled()
+  })
+
+  it("generates and signs a publicId scoped to memorial-grotto/<scope>/ when authorized", async () => {
     vi.mocked(getFamilySession).mockResolvedValue(true)
     createUploadSignatureMock.mockReturnValue({
       cloudName: "demo",
       apiKey: "key",
       timestamp: 123,
-      folder: "memorial-grotto/family",
+      publicId: "memorial-grotto/family/11111111-1111-1111-1111-111111111111",
       signature: "sig",
     })
 
     const result = await getGalleryUploadSignature("family")
 
-    expect(createUploadSignatureMock).toHaveBeenCalledWith("memorial-grotto/family")
+    expect(createUploadSignatureMock).toHaveBeenCalledWith(
+      "memorial-grotto/family/11111111-1111-1111-1111-111111111111",
+    )
     expect(result).toEqual({
       cloudName: "demo",
       apiKey: "key",
       timestamp: 123,
-      folder: "memorial-grotto/family",
+      publicId: "memorial-grotto/family/11111111-1111-1111-1111-111111111111",
       signature: "sig",
     })
   })
@@ -96,6 +112,15 @@ describe("registerGalleryImage", () => {
     const result = await registerGalleryImage("family", "memorial-grotto/family/abc", "Foto", "")
 
     expect(result.error).toBe("Não autorizado.")
+    expect(sqlMock).not.toHaveBeenCalled()
+  })
+
+  it("rejects a scope outside family/israel/sonia", async () => {
+    vi.mocked(getFamilySession).mockResolvedValue(true)
+
+    const result = await registerGalleryImage("admin" as never, "memorial-grotto/admin/abc", "Foto", "")
+
+    expect(result.error).toBe("Escopo inválido.")
     expect(sqlMock).not.toHaveBeenCalled()
   })
 
@@ -138,6 +163,16 @@ describe("registerGalleryImage", () => {
     expect(sqlMock.mock.calls[0].slice(1)).toEqual(["family", "Piquenique", null, "memorial-grotto/family/abc"])
     expect(result.error).toBeNull()
   })
+
+  it("returns a generic error instead of throwing when the insert fails", async () => {
+    vi.mocked(getFamilySession).mockResolvedValue(true)
+    verifyAssetExistsMock.mockResolvedValue(true)
+    sqlMock.mockRejectedValueOnce(new Error("connection reset"))
+
+    const result = await registerGalleryImage("family", "memorial-grotto/family/abc", "Foto", "")
+
+    expect(result.error).toBe("Não foi possível salvar a foto. Tente novamente.")
+  })
 })
 
 describe("deleteGalleryImage", () => {
@@ -173,5 +208,24 @@ describe("deleteGalleryImage", () => {
     expect(destroyAssetMock).toHaveBeenCalledWith("memorial-grotto/family/abc")
     expect(sqlMock.mock.calls[1].slice(1)).toEqual(["1"])
     expect(result.error).toBeNull()
+  })
+
+  it("returns a generic error instead of throwing when the lookup query fails", async () => {
+    vi.mocked(getFamilySession).mockResolvedValue(true)
+    sqlMock.mockRejectedValueOnce(new Error("connection reset"))
+
+    const result = await deleteGalleryImage("family", "1")
+
+    expect(result.error).toBe("Não foi possível excluir a foto. Tente novamente.")
+  })
+
+  it("returns a generic error instead of throwing when destroying the Cloudinary asset fails", async () => {
+    vi.mocked(getFamilySession).mockResolvedValue(true)
+    sqlMock.mockResolvedValueOnce([{ public_id: "memorial-grotto/family/abc" }])
+    destroyAssetMock.mockRejectedValueOnce(new Error("cloudinary is down"))
+
+    const result = await deleteGalleryImage("family", "1")
+
+    expect(result.error).toBe("Não foi possível excluir a foto. Tente novamente.")
   })
 })

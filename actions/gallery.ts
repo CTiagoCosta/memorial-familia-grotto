@@ -10,7 +10,7 @@ import {
   type UploadSignature,
 } from "@/lib/cloudinary"
 import { getFamilySession } from "@/lib/auth/get-family-session"
-import type { GalleryImage, GalleryScope } from "@/types/database"
+import { isGalleryScope, type GalleryImage, type GalleryScope } from "@/types/database"
 
 interface ActionResult {
   error: string | null
@@ -53,8 +53,12 @@ export async function getGalleryUploadSignature(scope: GalleryScope): Promise<Up
   if (!authorized) {
     return { error: "Não autorizado." }
   }
+  if (!isGalleryScope(scope)) {
+    return { error: "Escopo inválido." }
+  }
 
-  return createUploadSignature(`${GALLERY_FOLDER}/${scope}`)
+  const publicId = `${GALLERY_FOLDER}/${scope}/${crypto.randomUUID()}`
+  return createUploadSignature(publicId)
 }
 
 export async function registerGalleryImage(
@@ -66,6 +70,9 @@ export async function registerGalleryImage(
   const authorized = await getFamilySession()
   if (!authorized) {
     return { error: "Não autorizado." }
+  }
+  if (!isGalleryScope(scope)) {
+    return { error: "Escopo inválido." }
   }
 
   const trimmedTitle = title.trim()
@@ -83,13 +90,17 @@ export async function registerGalleryImage(
     return { error: "Imagem não encontrada no Cloudinary." }
   }
 
-  const sql = getSql()
-  await sql`
-    insert into gallery_images (scope, title, description, public_id)
-    values (${scope}, ${trimmedTitle}, ${description.trim() || null}, ${publicId})
-  `
-
-  return { error: null }
+  try {
+    const sql = getSql()
+    await sql`
+      insert into gallery_images (scope, title, description, public_id)
+      values (${scope}, ${trimmedTitle}, ${description.trim() || null}, ${publicId})
+    `
+    return { error: null }
+  } catch (error) {
+    console.error(error)
+    return { error: "Não foi possível salvar a foto. Tente novamente." }
+  }
 }
 
 export async function deleteGalleryImage(scope: GalleryScope, imageId: string): Promise<ActionResult> {
@@ -98,17 +109,22 @@ export async function deleteGalleryImage(scope: GalleryScope, imageId: string): 
     return { error: "Não autorizado." }
   }
 
-  const sql = getSql()
-  const rows = (await sql`
-    select public_id from gallery_images where id = ${imageId}
-  `) as unknown as { public_id: string }[]
+  try {
+    const sql = getSql()
+    const rows = (await sql`
+      select public_id from gallery_images where id = ${imageId}
+    `) as unknown as { public_id: string }[]
 
-  if (rows.length === 0) {
-    return { error: "Foto não encontrada." }
+    if (rows.length === 0) {
+      return { error: "Foto não encontrada." }
+    }
+
+    await destroyAsset(rows[0].public_id)
+    await sql`delete from gallery_images where id = ${imageId}`
+
+    return { error: null }
+  } catch (error) {
+    console.error(error)
+    return { error: "Não foi possível excluir a foto. Tente novamente." }
   }
-
-  await destroyAsset(rows[0].public_id)
-  await sql`delete from gallery_images where id = ${imageId}`
-
-  return { error: null }
 }

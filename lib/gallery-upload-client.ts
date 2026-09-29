@@ -30,28 +30,31 @@ export async function uploadGalleryPhoto(
     return { error: signatureResult.error }
   }
 
-  const { cloudName, apiKey, timestamp, folder, signature } = signatureResult
+  const { cloudName, apiKey, timestamp, publicId, signature } = signatureResult
 
   const uploadForm = new FormData()
   uploadForm.set("file", file)
   uploadForm.set("api_key", apiKey)
   uploadForm.set("timestamp", String(timestamp))
   uploadForm.set("signature", signature)
-  uploadForm.set("folder", folder)
+  uploadForm.set("public_id", publicId)
 
-  const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: "POST",
-    body: uploadForm,
-  })
+  try {
+    const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: "POST",
+      body: uploadForm,
+    })
 
-  if (!uploadResponse.ok) {
+    if (!uploadResponse.ok) {
+      return { error: "Falha ao enviar a foto." }
+    }
+  } catch (error) {
+    console.error(error)
     return { error: "Falha ao enviar a foto." }
   }
 
-  const uploadData = (await uploadResponse.json()) as { public_id?: string }
-  if (!uploadData.public_id) {
-    return { error: "Falha ao enviar a foto." }
-  }
-
-  return registerGalleryImage(scope, uploadData.public_id, trimmedTitle, description)
+  // publicId was generated and signed by the server before the upload, so
+  // it's the id the asset actually landed at regardless of what Cloudinary's
+  // response echoes back.
+  return registerGalleryImage(scope, publicId, trimmedTitle, description)
 }

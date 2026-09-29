@@ -47,34 +47,43 @@ export async function addTestimonial(person: Person, name: string, message: stri
     return { error: "Nome e mensagem são obrigatórios." }
   }
 
-  const sql = getSql()
-  await sql`insert into testimonials (person, name, message) values (${person}, ${trimmedName}, ${trimmedMessage})`
-
-  return { error: null }
+  try {
+    const sql = getSql()
+    await sql`insert into testimonials (person, name, message) values (${person}, ${trimmedName}, ${trimmedMessage})`
+    return { error: null }
+  } catch (error) {
+    console.error(error)
+    return { error: "Não foi possível salvar o depoimento. Tente novamente." }
+  }
 }
 
 export async function likeTestimonial(person: Person, testimonialId: string, sessionId: string): Promise<ActionResult> {
-  const sql = getSql()
-  const rows = (await sql`
-    update testimonials
-    set
-      liked_by = case
-        when ${sessionId} = any(liked_by) then array_remove(liked_by, ${sessionId})
-        else array_append(liked_by, ${sessionId})
-      end,
-      likes = case
-        when ${sessionId} = any(liked_by) then likes - 1
-        else likes + 1
-      end
-    where id = ${testimonialId}
-    returning id
-  `) as unknown as { id: string }[]
+  try {
+    const sql = getSql()
+    const rows = (await sql`
+      update testimonials
+      set
+        liked_by = case
+          when ${sessionId} = any(liked_by) then array_remove(liked_by, ${sessionId})
+          else array_append(liked_by, ${sessionId})
+        end,
+        likes = case
+          when ${sessionId} = any(liked_by) then likes - 1
+          else likes + 1
+        end
+      where id = ${testimonialId}
+      returning id
+    `) as unknown as { id: string }[]
 
-  if (rows.length === 0) {
-    return { error: "Depoimento não encontrado." }
+    if (rows.length === 0) {
+      return { error: "Depoimento não encontrado." }
+    }
+
+    return { error: null }
+  } catch (error) {
+    console.error(error)
+    return { error: "Não foi possível atualizar a curtida. Tente novamente." }
   }
-
-  return { error: null }
 }
 
 export async function deleteTestimonial(person: Person, testimonialId: string): Promise<ActionResult> {
@@ -83,8 +92,12 @@ export async function deleteTestimonial(person: Person, testimonialId: string): 
     return { error: "Não autorizado." }
   }
 
-  const sql = getSql()
-  await sql`delete from testimonials where id = ${testimonialId}`
-
-  return { error: null }
+  try {
+    const sql = getSql()
+    await sql`delete from testimonials where id = ${testimonialId}`
+    return { error: null }
+  } catch (error) {
+    console.error(error)
+    return { error: "Não foi possível excluir o depoimento. Tente novamente." }
+  }
 }

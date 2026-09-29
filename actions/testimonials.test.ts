@@ -64,6 +64,14 @@ describe("addTestimonial", () => {
     expect(sqlMock.mock.calls[0].slice(1)).toEqual(["israel", "Maria", "Com carinho"])
     expect(result.error).toBeNull()
   })
+
+  it("returns a generic error instead of throwing when the insert fails", async () => {
+    sqlMock.mockRejectedValueOnce(new Error("connection reset"))
+
+    const result = await addTestimonial("israel", "Maria", "Com carinho")
+
+    expect(result.error).toBe("Não foi possível salvar o depoimento. Tente novamente.")
+  })
 })
 
 describe("likeTestimonial", () => {
@@ -88,6 +96,14 @@ describe("likeTestimonial", () => {
 
     expect(result.error).toBe("Depoimento não encontrado.")
   })
+
+  it("returns a generic error instead of throwing when the update fails", async () => {
+    sqlMock.mockRejectedValueOnce(new Error("connection reset"))
+
+    const result = await likeTestimonial("israel", "1", "session-a")
+
+    expect(result.error).toBe("Não foi possível atualizar a curtida. Tente novamente.")
+  })
 })
 
 describe("deleteTestimonial", () => {
@@ -110,5 +126,14 @@ describe("deleteTestimonial", () => {
 
     expect(sqlMock.mock.calls[0].slice(1)).toEqual(["1"])
     expect(result.error).toBeNull()
+  })
+
+  it("returns a generic error instead of throwing when the delete fails", async () => {
+    vi.mocked(getFamilySession).mockResolvedValue(true)
+    sqlMock.mockRejectedValueOnce(new Error("connection reset"))
+
+    const result = await deleteTestimonial("israel", "1")
+
+    expect(result.error).toBe("Não foi possível excluir o depoimento. Tente novamente.")
   })
 })

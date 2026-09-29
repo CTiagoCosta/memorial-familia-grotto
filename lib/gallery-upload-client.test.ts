@@ -49,12 +49,12 @@ describe("uploadGalleryPhoto", () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it("uploads directly to Cloudinary with the signed params and then registers the image", async () => {
+  it("uploads directly to Cloudinary with the signed public_id and then registers the image", async () => {
     getGalleryUploadSignatureMock.mockResolvedValue({
       cloudName: "demo",
       apiKey: "key-123",
       timestamp: 111,
-      folder: "memorial-grotto/family",
+      publicId: "memorial-grotto/family/abc",
       signature: "sig-abc",
     })
     vi.mocked(fetch).mockResolvedValue(
@@ -73,8 +73,10 @@ describe("uploadGalleryPhoto", () => {
     expect(body.get("api_key")).toBe("key-123")
     expect(body.get("timestamp")).toBe("111")
     expect(body.get("signature")).toBe("sig-abc")
-    expect(body.get("folder")).toBe("memorial-grotto/family")
+    expect(body.get("public_id")).toBe("memorial-grotto/family/abc")
 
+    // Uses the server-generated publicId directly, not whatever Cloudinary's
+    // response happens to echo back.
     expect(registerGalleryImageMock).toHaveBeenCalledWith(
       "family",
       "memorial-grotto/family/abc",
@@ -89,10 +91,26 @@ describe("uploadGalleryPhoto", () => {
       cloudName: "demo",
       apiKey: "key-123",
       timestamp: 111,
-      folder: "memorial-grotto/family",
+      publicId: "memorial-grotto/family/abc",
       signature: "sig-abc",
     })
     vi.mocked(fetch).mockResolvedValue(new Response("", { status: 400 }))
+
+    const result = await uploadGalleryPhoto("family", makeFile(10), "Foto", "")
+
+    expect(result.error).toBe("Falha ao enviar a foto.")
+    expect(registerGalleryImageMock).not.toHaveBeenCalled()
+  })
+
+  it("returns a generic error instead of throwing when the Cloudinary request itself fails", async () => {
+    getGalleryUploadSignatureMock.mockResolvedValue({
+      cloudName: "demo",
+      apiKey: "key-123",
+      timestamp: 111,
+      publicId: "memorial-grotto/family/abc",
+      signature: "sig-abc",
+    })
+    vi.mocked(fetch).mockRejectedValue(new TypeError("Failed to fetch"))
 
     const result = await uploadGalleryPhoto("family", makeFile(10), "Foto", "")
 
