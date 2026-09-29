@@ -1,6 +1,14 @@
 "use server"
 
-import { GALLERY_BUCKET, getServiceRoleClient } from "@/lib/supabase/server"
+import { getSql } from "@/lib/db"
+import {
+  createUploadSignature,
+  destroyAsset,
+  GALLERY_FOLDER,
+  imageUrl,
+  verifyAssetExists,
+  type UploadSignature,
+} from "@/lib/cloudinary"
 import { getFamilySession } from "@/lib/auth/get-family-session"
 import type { GalleryImage, GalleryScope } from "@/types/database"
 
@@ -13,77 +21,75 @@ interface GalleryImageRow {
   scope: GalleryScope
   title: string
   description: string | null
-  storage_path: string
+  public_id: string
   created_at: string
 }
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+const GALLERY_IMAGE_WIDTH = 1200
 
-function mapRow(row: GalleryImageRow, url: string): GalleryImage {
+function mapRow(row: GalleryImageRow): GalleryImage {
   return {
     id: row.id,
     scope: row.scope,
     title: row.title,
     description: row.description,
-    publicId: row.storage_path,
-    url,
+    publicId: row.public_id,
+    url: imageUrl(row.public_id, GALLERY_IMAGE_WIDTH),
     createdAt: row.created_at,
   }
 }
 
 export async function listGalleryImages(scope: GalleryScope): Promise<GalleryImage[]> {
-  const supabase = getServiceRoleClient()
-  const { data, error } = await supabase
-    .from("gallery_images")
-    .select("*")
-    .eq("scope", scope)
-    .order("created_at", { ascending: false })
+  const sql = getSql()
+  const rows = (await sql`
+    select * from gallery_images where scope = ${scope} order by created_at desc
+  `) as unknown as GalleryImageRow[]
 
-  if (error) throw new Error(error.message)
-
-  return ((data ?? []) as GalleryImageRow[]).map((row) => {
-    const { data: publicUrlData } = supabase.storage.from(GALLERY_BUCKET).getPublicUrl(row.storage_path)
-    return mapRow(row, publicUrlData.publicUrl)
-  })
+  return rows.map(mapRow)
 }
 
-export async function uploadGalleryImage(scope: GalleryScope, formData: FormData): Promise<ActionResult> {
+export async function getGalleryUploadSignature(scope: GalleryScope): Promise<UploadSignature | ActionResult> {
   const authorized = await getFamilySession()
   if (!authorized) {
     return { error: "Não autorizado." }
   }
 
-  const file = formData.get("file")
-  const title = String(formData.get("title") ?? "").trim()
-  const description = String(formData.get("description") ?? "").trim()
+  return createUploadSignature(`${GALLERY_FOLDER}/${scope}`)
+}
 
-  if (!(file instanceof File) || !title) {
-    return { error: "Título e arquivo são obrigatórios." }
-  }
-  if (!file.type.startsWith("image/")) {
-    return { error: "Apenas arquivos de imagem são permitidos." }
-  }
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    return { error: "Arquivo muito grande. Máximo 5MB." }
-  }
-
-  const supabase = getServiceRoleClient()
-  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-")
-  const storagePath = `${scope}/${crypto.randomUUID()}-${safeName}`
-
-  const { error: uploadError } = await supabase.storage.from(GALLERY_BUCKET).upload(storagePath, file)
-  if (uploadError) {
-    return { error: uploadError.message }
+export async function registerGalleryImage(
+  scope: GalleryScope,
+  publicId: string,
+  title: string,
+  description: string,
+): Promise<ActionResult> {
+  const authorized = await getFamilySession()
+  if (!authorized) {
+    return { error: "Não autorizado." }
   }
 
-  const { error: insertError } = await supabase.from("gallery_images").insert({
-    scope,
-    title,
-    description: description || null,
-    storage_path: storagePath,
-  })
+  const trimmedTitle = title.trim()
+  if (!trimmedTitle) {
+    return { error: "Título é obrigatório." }
+  }
 
-  return { error: insertError ? insertError.message : null }
+  const expectedPrefix = `${GALLERY_FOLDER}/${scope}/`
+  if (!publicId.startsWith(expectedPrefix)) {
+    return { error: "Imagem inválida." }
+  }
+
+  const exists = await verifyAssetExists(publicId)
+  if (!exists) {
+    return { error: "Imagem não encontrada no Cloudinary." }
+  }
+
+  const sql = getSql()
+  await sql`
+    insert into gallery_images (scope, title, description, public_id)
+    values (${scope}, ${trimmedTitle}, ${description.trim() || null}, ${publicId})
+  `
+
+  return { error: null }
 }
 
 export async function deleteGalleryImage(scope: GalleryScope, imageId: string): Promise<ActionResult> {
@@ -92,23 +98,17 @@ export async function deleteGalleryImage(scope: GalleryScope, imageId: string): 
     return { error: "Não autorizado." }
   }
 
-  const supabase = getServiceRoleClient()
-  const { data, error: fetchError } = await supabase
-    .from("gallery_images")
-    .select("storage_path")
-    .eq("id", imageId)
-    .single()
+  const sql = getSql()
+  const rows = (await sql`
+    select public_id from gallery_images where id = ${imageId}
+  `) as unknown as { public_id: string }[]
 
-  if (fetchError || !data) {
-    return { error: fetchError?.message ?? "Foto não encontrada." }
+  if (rows.length === 0) {
+    return { error: "Foto não encontrada." }
   }
 
-  const { error: removeError } = await supabase.storage.from(GALLERY_BUCKET).remove([data.storage_path])
-  if (removeError) {
-    return { error: removeError.message }
-  }
+  await destroyAsset(rows[0].public_id)
+  await sql`delete from gallery_images where id = ${imageId}`
 
-  const { error: deleteError } = await supabase.from("gallery_images").delete().eq("id", imageId)
-
-  return { error: deleteError ? deleteError.message : null }
+  return { error: null }
 }
